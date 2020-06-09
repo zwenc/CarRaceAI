@@ -18,15 +18,18 @@ class CarGame(threading.Thread):
         threading.Thread.__init__(self)
         self.__flag = threading.Event()
 
-        self.screen = screen
-        self.carMap = CarMap(screen)
-        self.car = None
-
         # 手动放置小车标志位
         self.placeCar = False
 
+        # 测距线显示开关
+        self.distanceLinesShow = True
+
         # 游戏轨迹记录
         self.Recording = False
+
+        self.screen = screen
+        self.carMap = CarMap(screen)
+        self.car = None
 
         self.start()
         self.__flag.set()
@@ -84,7 +87,7 @@ class CarGame(threading.Thread):
                     else:
                         print("记录模式关闭")
                         self.Recording = False
-
+            # 记录写入文件中
             elif event.key == pygame.K_s:
                 if self.car is not None:
                     self.record.write()
@@ -93,6 +96,11 @@ class CarGame(threading.Thread):
             elif event.key == pygame.K_c:
                 self.car = None
                 self.placeCar = True
+
+            # 是否显示测距信息
+            elif event.key == pygame.K_l:
+                if self.car is not None:
+                    self.car.setDistanceShowChange()
 
         # 按键松开信息
         elif event.type == pygame.KEYUP:
@@ -107,9 +115,11 @@ class CarGame(threading.Thread):
                 self.car = CarBase(self.screen, event.pos, angle=0)
                 self.placeCar = False
 
+    # 暂停线程
     def pause(self):
         self.__flag.clear()
 
+    # 开始线程
     def resume(self):
         self.__flag.set()  # 设置为True, 让线程停止阻塞
 

@@ -16,6 +16,7 @@ class CarMap():
 
     def __init__(self, screan):
         self.screen = screan
+
         self.mapIndex = 0
         self.mapList = os.listdir("config/map")
 

@@ -12,11 +12,10 @@ from config.MapConfig import *
 
 class CarInfo(object):
 
-    def __init__(self, screen, pos, angle=0, show=True):
+    def __init__(self, screen, pos, angle=0):
         self.startPos = [pos[0], pos[1]]
         self.startAngle = angle
         self.screen = screen
-        self.show = show
         self.init()
 
     def init(self):
@@ -69,7 +68,7 @@ class CarInfo(object):
         self.intPos[1] += self.movePos[1]
 
     # 状态信息更新
-    def statuesInfoUpdate(self):
+    def statuesInfoUpdate(self, distanceLinesShow):
         if self.intPos[0] < 0 or self.intPos[1] < 0 or self.intPos[1] > MAPSIZE[1] \
                 or self.intPos[0] > MAPSIZE[0]:
             self.isDone = True
@@ -87,7 +86,7 @@ class CarInfo(object):
         leftAngleDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 45)
         rightAngleDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 45)
 
-        if self.show:
+        if distanceLinesShow:
             pygame.draw.line(self.screen, [100, 100, 0], linearDistancePos, self.intPos)
             pygame.draw.line(self.screen, [0, 100, 100], leftDistancePos, self.intPos)
             pygame.draw.line(self.screen, [0, 100, 100], rightDistancePos, self.intPos)
@@ -121,7 +120,7 @@ class CarInfo(object):
 
         return tempPos, distance
 
-    def update(self):
+    def update(self, distanceLinesShow):
         """
         更新小车位置，更新小车距离边界的状态
         :param carPos: 小车当前位置
@@ -129,7 +128,7 @@ class CarInfo(object):
         :return:
         """
         self.moveinfoUpdate()
-        self.statuesInfoUpdate()
+        self.statuesInfoUpdate(distanceLinesShow)
 
 
 # 按键状态
@@ -143,12 +142,13 @@ class KeyState(object):
 class CarBase(object):
 
     # 初始化画板、小车位置、小车图标
-    def __init__(self, screen, pos=[20.0, 20.0], angle=0, logoIndex=0):
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, logoIndex=0, distanceLinesShow=False):
         self.initPos = [pos[0], pos[1]]
         self.initAngle = angle
         self.pos = [pos[0], pos[1]]
         self.logoIndex = logoIndex
         self.screen = screen
+        self.distanceLinesShow = distanceLinesShow
 
         # 小车信息
         self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle)
@@ -176,6 +176,13 @@ class CarBase(object):
         self.carInfo.init()
         self.key = KeyState()
 
+    def setDistanceShowChange(self):
+
+        if self.distanceLinesShow == False:
+            self.distanceLinesShow = True
+        else:
+            self.distanceLinesShow = False
+
     # 更新界面
     def Update(self):
         if self.key.up:
@@ -196,7 +203,7 @@ class CarBase(object):
         if self.key.up == False and self.key.down == False:
             self.carInfo.accSpeed = 0
 
-        self.carInfo.update()
+        self.carInfo.update(self.distanceLinesShow)
 
         self.carRect.move_ip(self.carInfo.movePos)
         self.carlogoRotate(self.carInfo.angle)
