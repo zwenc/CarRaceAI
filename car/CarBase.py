@@ -81,8 +81,8 @@ class CarInfo(object):
             return
 
         linearDistancePos, self.linearDistance = self.calcDistance(self.intPos, Angle=self.angle)
-        leftDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 90)
-        rightDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 90)
+        leftDistancePos, self.leftDistance = self.calcDistance(self.intPos, Angle=self.angle - 90)
+        rightDistancePos, self.rightDistance = self.calcDistance(self.intPos, Angle=self.angle + 90)
         leftAngleDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 45)
         rightAngleDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 45)
 

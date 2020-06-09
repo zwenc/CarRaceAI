@@ -23,7 +23,7 @@ class mainwindow():
 
         self.painter = Painter(self)
         self.carGame = CarGame(self.screen)
-        # self.carGame.initGame()
+        self.carGame.start()
 
     def changeMode(self, mode):
         if self.mode != mode:

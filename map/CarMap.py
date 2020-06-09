@@ -14,10 +14,10 @@ class CarMap():
     MapSize = [int(MAPSIZE[0]), MAPSIZE[1]]
     Color = BACKGROUNDCOLOR
 
-    def __init__(self, screan):
-        self.screen = screan
+    def __init__(self, screen, mapIndex = 0):
+        self.screen = screen
 
-        self.mapIndex = 0
+        self.mapIndex = mapIndex
         self.mapList = os.listdir("config/map")
 
     # 初始化地图

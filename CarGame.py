@@ -31,7 +31,6 @@ class CarGame(threading.Thread):
         self.carMap = CarMap(screen)
         self.car = None
 
-        self.start()
         self.__flag.set()
 
     def run(self):
