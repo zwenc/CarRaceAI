@@ -34,17 +34,9 @@ def class2Json(obj, filename):
     print(dictData)
     convert2Json(dictData, filename)
 
+def readJson(fileName):
+    f = open(fileName, encoding='utf-8')
+    data = json.load(f)
+    f.close()
 
-class mytest(object):
-
-    def __init__(self):
-        self.data = 12
-        self.name = "asdf"
-        self.aa = [[1,3],[2.0,3.0]]
-
-    def append(self,data):
-        self.aa.append(data)
-
-a = mytest()
-a.append([1,2])
-class2Json(a, "data.json")
+    return data

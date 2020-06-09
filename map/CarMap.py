@@ -7,8 +7,6 @@
 import pygame
 import os
 import cv2
-import threading
-import time
 import numpy as np
 from config.MapConfig import *
 
@@ -33,6 +31,9 @@ class CarMap():
 
         pygame.surfarray.blit_array(self.screen, initMap)
         self.mScreen = self.screen.copy()
+
+    def mapName(self):
+        return self.mapList[self.mapIndex]
 
     # 重新刷新地图， 比initMap速度要快
     def clear(self):

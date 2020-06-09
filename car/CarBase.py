@@ -12,8 +12,9 @@ from config.MapConfig import *
 
 class CarInfo(object):
 
-    def __init__(self, screen, pos, show=True):
+    def __init__(self, screen, pos, angle=0, show=True):
         self.startPos = [pos[0], pos[1]]
+        self.startAngle = angle
         self.screen = screen
         self.show = show
         self.init()
@@ -26,7 +27,7 @@ class CarInfo(object):
         # 运动信息
         self.speed = 0  # 速度
         self.accSpeed = 0  # 加速度
-        self.angle = 0  # 角度
+        self.angle = self.startAngle  # 角度
         self.accAngle = 0  # 角速度
         self.movePos = [0, 0]  # 下一次更新需要移动的相对位置
 
@@ -139,23 +140,23 @@ class KeyState(object):
         self.right = False
         self.left = False
 
-
 class CarBase(object):
 
     # 初始化画板、小车位置、小车图标
-    def __init__(self, screen, pos=[20.0, 20.0], logoIndex=0):
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, logoIndex=0):
         self.initPos = [pos[0], pos[1]]
+        self.initAngle = angle
         self.pos = [pos[0], pos[1]]
-
         self.logoIndex = logoIndex
         self.screen = screen
 
         # 小车信息
-        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]])
+        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle)
 
         # 初始化小车图片，以及状态
         self.initCar()
 
+    # 初始化小车信息
     def initCar(self):
         # 加载小车图片
         self.logeFileList = os.listdir("config/png/")
@@ -168,6 +169,8 @@ class CarBase(object):
 
         self.paintCarLoge = self.carLogo.copy()
         self.paintCarRect = self.carRect.copy()
+
+        self.carlogoRotate(self.initAngle)
 
         # 状态信息初始化
         self.carInfo.init()
@@ -209,6 +212,7 @@ class CarBase(object):
     def isDone(self):
         return self.carInfo.isDone
 
+    # 重新开始游戏
     def reStart(self):
         self.initCar()
 

@@ -7,12 +7,10 @@
 import pygame
 from config.MapConfig import *
 from paintMap import Painter
-from map.CarMap import CarMap
 from CarGame import CarGame
 
 class mainwindow():
     def __init__(self):
-        # super(mainwindow, self).__init__(self)
         self.mode = "normal"
 
         self.run()
@@ -24,17 +22,15 @@ class mainwindow():
         pygame.display.set_caption(WINDOWSNAME)
 
         self.painter = Painter(self)
-        self.carMap = CarMap(self)
         self.carGame = CarGame(self.screen)
-        self.carGame.initGame()
-
-        # self.carMap.initMap()
+        # self.carGame.initGame()
 
     def changeMode(self, mode):
         if self.mode != mode:
             if mode == "normal":
-                self.carMap.initMap()
+                self.carGame.resume()
             elif mode == "painter":
+                self.carGame.pause()
                 self.painter.initMap()
         self.mode = mode
 
@@ -50,6 +46,7 @@ class mainwindow():
                     elif event.key == pygame.K_p and self.mode != "painter":
                         print("painter mode")
                         self.changeMode("painter")
+
                         continue
 
                 elif event.type == pygame.QUIT:
