@@ -9,7 +9,6 @@ import pygame
 import os
 from config.MapConfig import *
 
-
 class CarInfo(object):
 
     def __init__(self, screen, pos, angle=0):
@@ -47,8 +46,8 @@ class CarInfo(object):
 
         if self.speed < 0:
             self.speed = 0
-        elif self.speed >= 10:
-            self.speed = 10
+        elif self.speed >= MAXSPEED:
+            self.speed = MAXSPEED
 
         if self.angle >= 360 or self.angle <= -360:
             self.angle = 0
@@ -83,8 +82,8 @@ class CarInfo(object):
         linearDistancePos, self.linearDistance = self.calcDistance(self.intPos, Angle=self.angle)
         leftDistancePos, self.leftDistance = self.calcDistance(self.intPos, Angle=self.angle - 90)
         rightDistancePos, self.rightDistance = self.calcDistance(self.intPos, Angle=self.angle + 90)
-        leftAngleDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 45)
-        rightAngleDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 45)
+        leftAngleDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 30)
+        rightAngleDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 30)
 
         if distanceLinesShow:
             pygame.draw.line(self.screen, [100, 100, 0], linearDistancePos, self.intPos)
@@ -123,8 +122,7 @@ class CarInfo(object):
     def update(self, distanceLinesShow):
         """
         更新小车位置，更新小车距离边界的状态
-        :param carPos: 小车当前位置
-        :param carAngle: 小车方向
+        :param distanceLinesShow: 是否在界面上显示位置
         :return:
         """
         self.moveinfoUpdate()
@@ -154,15 +152,16 @@ class CarBase(object):
         self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle)
 
         # 初始化小车图片，以及状态
-        self.initCar()
-
-    # 初始化小车信息
-    def initCar(self):
-        # 加载小车图片
         self.logeFileList = os.listdir("config/png/")
         self.logo = self.logeFileList[self.logoIndex]
 
         self.carLogo = pygame.image.load("config/png/" + self.logo).convert_alpha()
+
+        self.initCar()
+
+    # 初始化小车信息
+    def initCar(self):
+
         width, high = self.carLogo.get_width(), self.carLogo.get_height()
         self.carRect = self.carLogo.get_rect()
         self.carRect = self.carRect.move((self.initPos[0] - int(width / 2), self.initPos[1] - int(high / 2)))
@@ -186,16 +185,16 @@ class CarBase(object):
     # 更新界面
     def Update(self):
         if self.key.up:
-            self.carInfo.accSpeed = 0.04
+            self.carInfo.accSpeed = MAXSPEEDACC
 
         if self.key.down:
-            self.carInfo.accSpeed = -0.04
+            self.carInfo.accSpeed = -MAXSPEEDACC
 
         if self.key.left:
-            self.carInfo.accAngle = -4
+            self.carInfo.accAngle = -MAXANGLESPEED
 
         if self.key.right:
-            self.carInfo.accAngle = 4
+            self.carInfo.accAngle = MAXANGLESPEED
 
         if self.key.right == False and self.key.left == False:
             self.carInfo.accAngle = 0

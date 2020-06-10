@@ -3,6 +3,9 @@
 # @Author  : zwenc
 # @Email   : zwence@163.com
 # @File    : CarGameAI.py
+"""
+该代码用于强化学习采样数据学习专用代码，无法显示界面
+"""
 
 import pygame
 import math
@@ -12,10 +15,9 @@ from car.CarAI import CarAI
 from map.CarMap import CarMap
 from tools.RacingTrack import RacingTrack
 
-
 class CarGameAI(object):
 
-    def __init__(self, mapIndex, initPosIndex=-1):
+    def __init__(self, mapIndex=0, initPosIndex=-1):
         """
         :param mapIndex:     地图编号
         :param initPosIndex: 初始位置选择，-1表示随机位置，如果是验证网络是否能够训练，建议使用初始位置0
@@ -59,6 +61,12 @@ class CarGameAI(object):
         else:
             exit("该地图无初始化点信息")
 
+        # 小车状态
+        self.mstate = [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
+                self.car.carInfo.rightAngleDistance,
+                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
+                self.car.carInfo.angle]
+
     def step(self, accSpeed, accAngle):
         """
         :param accSpeed: 加速度
@@ -76,10 +84,10 @@ class CarGameAI(object):
 
         # 居中奖励
         DistanceDiff = math.fabs(self.car.carInfo.leftDistance - self.car.carInfo.rightDistance)
-        centerReward = - DistanceDiff * 0.5
+        centerReward = - DistanceDiff
 
         # 速度奖励
-        speedReward = self.car.carInfo.speed
+        speedReward = self.car.carInfo.speed * 2
 
         # 总的奖励
         allReward = liveReward + centerReward + speedReward
@@ -87,11 +95,16 @@ class CarGameAI(object):
         return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
                 self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
-                self.car.carInfo.angle], allReward, self.car.carInfo.isDone
+                self.car.carInfo.angle], allReward * 0.01, self.car.carInfo.isDone
 
-    def reStart(self):
+    def reset(self):
         self.car.reStart()
         self.tracking = []
+
+        return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
+                self.car.carInfo.rightAngleDistance,
+                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
+                self.car.carInfo.angle]
 
     def saveImage(self):
         filename = "AI/out/image/" + self.carMap.mapName()

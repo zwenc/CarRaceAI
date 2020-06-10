@@ -18,11 +18,11 @@ class CarAI(CarBase):
 
     # 更新界面， 由AI直接控制，AI控制加速和角度两个参数
     def Update(self, accSpeed, accAngle):
-        accSpeed = 0.1 if accSpeed >= 0.1 else accSpeed
-        accSpeed = -0.1 if accSpeed <= -0.1 else accSpeed
+        accSpeed = MAXSPEEDACC if accSpeed >= MAXSPEEDACC else accSpeed
+        accSpeed = -MAXSPEEDACC if accSpeed <= -MAXSPEEDACC else accSpeed
 
-        accAngle = 5 if accAngle >= 5 else accAngle
-        accAngle = -5 if accAngle <= -5 else accAngle
+        accAngle = MAXANGLESPEED if accAngle >= MAXANGLESPEED else accAngle
+        accAngle = -MAXANGLESPEED if accAngle <= -MAXANGLESPEED else accAngle
 
         self.carInfo.accSpeed = accSpeed
         self.carInfo.accAngle = accAngle
