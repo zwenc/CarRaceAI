@@ -12,6 +12,7 @@ INITCOLOR = [255, 255, 255]
 # 小车信息
 BACKGROUNDCOLOR = [249, 205, 173]      # 背景颜色
 RACECOLOR = [155, 155, 155]            # 跑道颜色
+CENTERCOLOR = [255, 255, 0]              # 斑马线颜色
 
 RGITHLINEANGLE = 30  # 斜方向测距角度
 MAXSPEED = 10        # 最大速度

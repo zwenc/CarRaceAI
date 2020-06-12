@@ -12,32 +12,35 @@ from torch.distributions import Normal
 
 class ActorNetwork(nn.Module):
 
-    def __init__(self, input_size, hidden_size=50, action_size=1):
+    def __init__(self, input_size, hidden_size=100, action_size=1):
         super(ActorNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
-        self.activate1 = torch.nn.LeakyReLU(0.01)
+        self.activate1 = torch.nn.LeakyReLU(0.001)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.activate2 = torch.nn.LeakyReLU(0.01)
+        self.activate2 = torch.nn.LeakyReLU(0.001)
         self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.activate3 = torch.nn.LeakyReLU(0.01)
+        self.activate3 = torch.nn.LeakyReLU(0.001)
 
         self.mu = nn.Linear(hidden_size, action_size)
         self.sigma = nn.Linear(hidden_size, action_size)
 
-        # for m in self.children():
-        #     if isinstance(m, (nn.Linear)):
-        #         m.weight.data.normal_(0, 0.02)
-        #         m.bias.data.zero_()
+        for m in self.children():
+            if isinstance(m, (nn.Linear)):
+                m.weight.data.normal_(0, 0.1)
+                m.bias.data.zero_()
 
     def forward(self, x):
         x = self.activate1(self.fc1(x))
         x = self.activate2(self.fc2(x))
         x = self.activate3(self.fc3(x))
 
-        mu = torch.tanh(self.mu(x)) * 0.5    # 均值
+        mu = torch.tanh(self.mu(x))          # 均值
         sigma = F.softplus(self.sigma(x))    # 标准差
 
         out = Normal(loc=mu, scale=sigma)    # 正太分布，（输出是很多值，需要使用sample对其进行采样）
+
+        if torch.isnan(sigma[0,0]):
+            print("adf")
 
         return out
 

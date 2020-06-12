@@ -7,13 +7,16 @@
 import math
 import pygame
 import os
+import numpy as np
+import torch
 from config.MapConfig import *
 
 class CarInfo(object):
 
-    def __init__(self, screen, pos, angle=0):
+    def __init__(self, screen, pos, angle=0, speed = 0):
         self.startPos = [pos[0], pos[1]]
         self.startAngle = angle
+        self.startSpeed = speed
         self.screen = screen
         self.init()
 
@@ -23,7 +26,7 @@ class CarInfo(object):
         self.intPos = self.startPos.copy()    # 整型数据，记录像素点位置（显示位置）
 
         # 运动信息
-        self.speed = 0  # 速度
+        self.speed = self.startSpeed  # 速度
         self.accSpeed = 0  # 加速度
         self.angle = self.startAngle  # 角度
         self.accAngle = 0  # 角速度
@@ -35,6 +38,7 @@ class CarInfo(object):
         self.rightDistance = 0  # 右边距离
         self.leftAngleDistance = 0  # 左边斜向上距离
         self.rightAngleDistance = 0  # 右边斜向上距离
+        self.centerDistance = 0      # 距离轨道中心距离（只有AI模式可见）
 
         # 游戏结束信息
         self.isDone = False
@@ -59,8 +63,11 @@ class CarInfo(object):
         self.floatPos[1] += -moveDistance * math.cos(2 * math.pi * (self.angle / 360))
 
         # 更新下次需要移动的相对距离（整型）
-        self.movePos[0] = int(self.floatPos[0] - self.intPos[0])
-        self.movePos[1] = int(self.floatPos[1] - self.intPos[1])
+        try:
+            self.movePos[0] = int(self.floatPos[0] - self.intPos[0])
+            self.movePos[1] = int(self.floatPos[1] - self.intPos[1])
+        except:
+            print(self.angle, moveDistance)
 
         # 更新当前在图片上的像素位置
         self.intPos[0] += self.movePos[0]
@@ -79,11 +86,12 @@ class CarInfo(object):
             self.isDone = True
             return
 
-        linearDistancePos, self.linearDistance = self.calcDistance(self.intPos, Angle=self.angle)
-        leftDistancePos, self.leftDistance = self.calcDistance(self.intPos, Angle=self.angle - 90)
-        rightDistancePos, self.rightDistance = self.calcDistance(self.intPos, Angle=self.angle + 90)
-        leftAngleDistancePos, self.leftAngleDistance = self.calcDistance(self.intPos, Angle=self.angle - 30)
-        rightAngleDistancePos, self.rightAngleDistance = self.calcDistance(self.intPos, Angle=self.angle + 30)
+        linearDistancePos, self.linearDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle)
+        leftDistancePos, self.leftDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - 90)
+        rightDistancePos, self.rightDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + 90)
+        leftAngleDistancePos, self.leftAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - RGITHLINEANGLE)
+        rightAngleDistancePos, self.rightAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + RGITHLINEANGLE)
+        centerPos, self.centerDistance = self.calcCenterDistance(self.intPos)
 
         if distanceLinesShow:
             pygame.draw.line(self.screen, [100, 100, 0], linearDistancePos, self.intPos)
@@ -91,8 +99,28 @@ class CarInfo(object):
             pygame.draw.line(self.screen, [0, 100, 100], rightDistancePos, self.intPos)
             pygame.draw.line(self.screen, [100, 0, 100], leftAngleDistancePos, self.intPos)
             pygame.draw.line(self.screen, [100, 0, 100], rightAngleDistancePos, self.intPos)
+            pygame.draw.line(self.screen, [0, 255, 255], centerPos, self.intPos)
 
-    def calcDistance(self, carPos, Angle):
+    def calcCenterDistance(self, carPos):
+        posPix = list(self.screen.get_at(carPos))[0:3]
+
+        theta = np.linspace(0, 2 * np.pi, 360)
+        x = np.cos(theta)
+        y = np.sin(theta)
+
+        for distance in range(30):
+            for temp_x, temp_y in zip(x,y):
+                tempPos = [int(carPos[0] + distance * temp_x), int(carPos[1] + distance * temp_y)]
+                tempPix = list(self.screen.get_at(tempPos))[0:3]
+
+                # 找到了中点，返回
+                if tempPix == CENTERCOLOR:
+                    return tempPos, distance
+
+        # 没有找到则返回30
+        return carPos, 30
+
+    def calcEdgeDistance(self, carPos, Angle):
         """
         计算小车距离对应方向边界的距离
         :param carPos: 小车当前位置
@@ -140,16 +168,17 @@ class KeyState(object):
 class CarBase(object):
 
     # 初始化画板、小车位置、小车图标
-    def __init__(self, screen, pos=[20.0, 20.0], angle=0, logoIndex=0, distanceLinesShow=False):
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0,logoIndex=0, distanceLinesShow=False):
         self.initPos = [pos[0], pos[1]]
         self.initAngle = angle
+        self.initSpeed = speed
         self.pos = [pos[0], pos[1]]
         self.logoIndex = logoIndex
         self.screen = screen
         self.distanceLinesShow = distanceLinesShow
 
         # 小车信息
-        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle)
+        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle, self.initSpeed)
 
         # 初始化小车图片，以及状态
         self.logeFileList = os.listdir("config/png/")

@@ -30,6 +30,10 @@ class CarMap():
         initMap[imageMap[:, :, 1] == 0, 1] = RACECOLOR[1]
         initMap[imageMap[:, :, 2] == 0, 2] = RACECOLOR[2]
 
+        initMap[imageMap[:, :, 0] == 100, 0] = CENTERCOLOR[0]
+        initMap[imageMap[:, :, 1] == 100, 1] = CENTERCOLOR[1]
+        initMap[imageMap[:, :, 2] == 100, 2] = CENTERCOLOR[2]
+
         pygame.surfarray.blit_array(self.screen, initMap)
         self.mScreen = self.screen.copy()
 

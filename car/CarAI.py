@@ -13,8 +13,8 @@ from car.CarBase import *
 
 class CarAI(CarBase):
 
-    def __init__(self, screen, pos=[20.0, 20.0], angle=0, logoIndex=1, distanceLinesShow=False):
-        super(CarAI, self).__init__(screen, pos, angle, logoIndex, distanceLinesShow)
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0,logoIndex=0, distanceLinesShow=False):
+        super(CarAI, self).__init__(screen, pos, angle, speed, logoIndex, distanceLinesShow)
 
     # 更新界面， 由AI直接控制，AI控制加速和角度两个参数
     def Update(self, accSpeed, accAngle):

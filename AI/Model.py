@@ -30,15 +30,16 @@ def roll_out(actor_network, task, sample_nums):
         dist = actor_network(torch.tensor([state], dtype=torch.float).to(device))
 
         data = dist.sample()
-        accSpeed = data[0, 0]
-        accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
+        action = data.clamp(-1, 1).cpu().numpy()[0]
+        # accSpeed = data[0, 0]
+        # accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
+        #
+        # accAngle = data[0, 1]
+        # accAngle = accAngle.clamp(-MAXANGLESPEED, MAXANGLESPEED).cpu().numpy()
 
-        accAngle = data[0, 1]
-        accAngle = accAngle.clamp(-MAXANGLESPEED, MAXANGLESPEED).cpu().numpy()
+        next_state, reward, done = task.step(action)
 
-        next_state, reward, done = task.step(accSpeed, accAngle)
-
-        actions.append([accSpeed, accAngle])
+        actions.append(action)
         rewards.append([(reward + 8) / 8])
         final_state = next_state
         state = next_state
@@ -83,8 +84,8 @@ class Mymodel(object):
                                                    output_size=TASK_CONFIG_DIM, device=device).to(device)
 
         # in ppo method, need to create two actor
-        self.actorNetwork = ActorNetwork(STATE_DIM, 50, ACTION_DIM).to(device)
-        self.actorNetworkOld = ActorNetwork(STATE_DIM, 50, ACTION_DIM).to(device)
+        self.actorNetwork = ActorNetwork(STATE_DIM, 100, ACTION_DIM).to(device)
+        self.actorNetworkOld = ActorNetwork(STATE_DIM, 100, ACTION_DIM).to(device)
 
         # use Adam to create the optim
         self.metaValueNetworkOptim = torch.optim.Adam(self.metaValueNetwork.parameters(),
@@ -95,11 +96,11 @@ class Mymodel(object):
                                                   lr=ACTOR_NETWORK_LR)
 
         # init the environment
-        self.taskEnv = env(mapIndex=0, initPosIndex=0)
+        self.taskEnv = env(mapIndex=1, initPosIndex=0)
         self.taskEnv.reset()
 
         # init the test environment
-        self.testEnv = env(mapIndex=0, initPosIndex=0)
+        self.testEnv = env(mapIndex=1, initPosIndex=0)
         self.testEnv.reset()
 
         # init the data container
@@ -166,7 +167,7 @@ class Mymodel(object):
             self.LstmSteps = self.LstmSteps + len(LstmScore.tolist())
 
     def saveReward(self, reward):
-        if (self.roundSteps + len(reward)) > 600:
+        if (self.roundSteps + len(reward)) >= 600:
             for index in range(600 - self.roundSteps):
                 self.score = self.score + reward[index]
 
@@ -175,7 +176,7 @@ class Mymodel(object):
             else:
                 self.runningReward = self.score * 0.1 + self.runningReward * 0.9
 
-            tensorVis.add_scalar("reward/" + self.name, self.runningReward, self.roundindex)
+            # tensorVis.add_scalar("reward/" + self.name, self.runningReward, self.roundindex)
 
             with open(LOSSSAVEPATH + '/rewards_origin_' +
                       '{}_'.format(TIMESTR) + self.name + '.csv', 'a+') \
@@ -238,7 +239,7 @@ class Mymodel(object):
                 (s_[np.newaxis, :], taskConfig.detach()), 1).to(device)) \
                 if TASK_CONFIG_ENABLE else self.metaValueNetwork(s_)
 
-            discount_r = discount_reward(rewards, 0.90, final_r.cpu().item())
+            discount_r = discount_reward(rewards, DELAYGAMMA, final_r.cpu().item())
             discount_r = torch.tensor(discount_r, dtype=torch.float, requires_grad=False).view(-1, 1).to(device)
 
             with torch.no_grad():
@@ -266,7 +267,14 @@ class Mymodel(object):
                 action_loss = -torch.min(surr1, surr2).mean()
                 self.actorNetworkOptim.zero_grad()
 
+                if torch.isnan(action_loss):
+                    print("Nane")
+
                 action_loss.backward()
+                if torch.isnan(self.actorNetwork.fc1.weight.grad[0, 0]):
+                    print("ad")
+                self.actorNetworkOptim.step()
+                # print(action_loss.cpu().item())
                 # nn.utils.clip_grad_norm_(self.actorNetwork.parameters(), 0.5)
 
                 value_loss = F.mse_loss(discount_r, self.metaValueNetwork(
@@ -306,7 +314,7 @@ class Mymodel(object):
                         self.pubilcModel.actorNetworkOptim.step()
 
                     self.metaValueNetworkOptim.step()
-                    self.actorNetworkOptim.step()
+
                 LossCount[0] = LossCount[0] + action_loss.cpu().item()
                 LossCount[1] = LossCount[1] + value_loss.cpu().item()
             LossCount[0] = LossCount[0] / STEP
@@ -348,18 +356,21 @@ class Mymodel(object):
         # Q_y = []
         #
         # state = test_task.reset()
-        for test_step in range(10000):
+        temp = []
+        for test_step in range(2000):
             dist = self.actorNetwork(Variable(torch.Tensor([state])).to(device))
 
             data = dist.sample()
-            accSpeed = data[0, 0]
-            accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
+            action = data.clamp(-1, 1).cpu().numpy()[0]
+            # accSpeed = data[0, 0]
+            # accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
+            #
+            # accAngle = data[0, 1]
+            # accAngle = accAngle.clamp(-MAXANGLESPEED, MAXANGLESPEED).cpu().numpy()
 
-            accAngle = data[0, 1]
-            accAngle = accAngle.clamp(-MAXANGLESPEED, MAXANGLESPEED).cpu().numpy()
-
-            next_state, reward, done = self.testEnv.step(accSpeed, accAngle)
+            next_state, reward, done = self.testEnv.step(action)
             state = next_state
+            temp.append(action)
 
         #     B_distance_error.append(infos['B_distance_error'])
         #     Q_distance_error.append(infos['Q_distance_error'])
@@ -370,8 +381,9 @@ class Mymodel(object):
         #     Q_x.append(infos['Q'][0])
         #     Q_y.append(infos['Q'][1])
         #
-            if done:
+            if done or test_step == 1999:
                 print("episode:", self.episode, "task:", self.name, "test result:", test_step)
+                print(temp)
                 break
         #
         # # if test_step > 100:
@@ -429,12 +441,12 @@ class Mymodel(object):
             self.episode = self.episode + 1
             return
 
-        if self.episode % 20 == 0:
+        if self.episode % 10 == 0:
             self.modelTest(self.steps)
             self.maxSteps = 0
 
-        if self.episode % 1 == 0:
-            self.loadPublicDict()
+        # if self.episode % 1 == 0:
+        #     self.loadPublicDict()
 
         self.episode = self.episode + 1
         self.steps = self.sampleData()  # data collect
@@ -444,7 +456,7 @@ class Mymodel(object):
 
         self.train()
 
-        self.saveDict()
+        # self.saveDict()
 
 if __name__ == "__main__":
 

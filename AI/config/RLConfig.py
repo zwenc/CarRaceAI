@@ -11,7 +11,7 @@ ACTION_DIM = 2
 TASK_CONFIG_DIM = 1
 EPISODE = 60000
 STEP = 10
-SAMPLE_NUMS = 32  # 5,10,20
+SAMPLE_NUMS = 64  # 5,10,20
 TEST_SAMPLE_NUMS = 5
 TASK_CONFIG_LONG = 15
 TASK_CONFIG_ENABLE = False
@@ -20,8 +20,10 @@ A3C_MESS_LIST = [490, 500, 510]
 # A3C_MESS_LIST = [ 500]
 
 META_VALUE_NETWORK_LR = 0.00001
+# META_VALUE_NETWORK_LR = 0
 TASK_CONFIG_NETWORK_LR = 0.004
-ACTOR_NETWORK_LR = 0.00001  # 0.0002
+# ACTOR_NETWORK_LR = 0.0001  # 0.0002
+ACTOR_NETWORK_LR = 0.00001
 
 devices = "cuda:0"
 TIMESTR = time.strftime("%Y-%m-%dT%H-%M", time.localtime())
@@ -31,6 +33,9 @@ MODELPATH = "AI/out/model/"  # 输出模型地址
 PREMODEPATH = "AI/model"     # 预训练模型地址
 LOSSSAVEPATH = "./AI/out/rewards"
 LOGFILEPATH = "./AI/out/log/"
+
+# 奖励参数
+DELAYGAMMA = 0.9
 
 import os
 import sys

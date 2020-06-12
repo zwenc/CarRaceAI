@@ -17,11 +17,16 @@ class Painter(object):
         self.parent = parent
         self.initMap()
 
+        # 是否绘制中轴线，默认绘制
+        self.centralAxis = True
+        self.race = []
+
         self.moveState = False
 
     def initMap(self):
         painterRact = pygame.Rect(0, 0, self.painterMapSize[0], self.painterMapSize[1])
         pygame.draw.rect(self.parent.screen, self.painterColor, painterRact, 0)
+        self.race = []
 
     def paint(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -29,6 +34,7 @@ class Painter(object):
             self.moveState = True
             self.start_x, self.start_y = event.pos
             self.paintPos = event.pos
+
         elif event.type == pygame.MOUSEBUTTONUP:
             self.moveState = False
         elif event.type == pygame.MOUSEMOTION:
@@ -50,17 +56,25 @@ class Painter(object):
                 self.clear()
             elif event.key == pygame.K_g:
                 self.generateRace()
+            elif event.key == pygame.K_f:
+                if self.centralAxis == False:
+                    self.centralAxis = True
+                else:
+                    self.centralAxis = False
+
 
     def drawMap(self):
         if self.moveState:
-            pygame.draw.line(self.parent.screen, [0, 0, 0], (self.start_x, self.start_y), self.paintPos, 8)
             pygame.draw.circle(self.parent.screen, [0, 0, 0], (self.start_x, self.start_y), 25)
             self.start_x, self.start_y = self.paintPos
+            if self.centralAxis:
+                self.race.append([self.start_x, self.start_y])
 
     def clear(self):
         self.initMap()
 
     def generateRace(self):
+        pygame.draw.lines(self.parent.screen, [100, 100, 100], True, self.race, 2)
         image = pygame.surfarray.array3d(self.parent.screen)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
         opening = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)

@@ -56,7 +56,7 @@ class CarGameAI(object):
             else:
                 carInfo = self.record[self.initPosIndex]  # 指定出生位置
 
-            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], distanceLinesShow=True)
+            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], speed = 2,distanceLinesShow=True)
 
         else:
             exit("该地图无初始化点信息")
@@ -67,35 +67,40 @@ class CarGameAI(object):
                 self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
                 self.car.carInfo.angle]
 
-    def step(self, accSpeed, accAngle):
+    def step(self, action):
         """
         :param accSpeed: 加速度
         :param accAngle: 角加速度
         :return: [直线距离，左斜距离，右斜距离，左距离，右距离，速度，角度]， 奖励, 是否结束游戏
         """
+        accSpeed = action[0]
+        accAngle = action[1]
         self.carMap.clear()  # 刷新地图
-        self.car.Update(accSpeed, accAngle)  # 更新小车，并显示在地图上
+        accSpeed = 0
+        self.car.Update(accSpeed * 0.1, accAngle * 5)  # 更新小车，并显示在地图上
 
         # 记录位置信息
         self.tracking.append([self.car.carInfo.intPos[0], self.car.carInfo.intPos[1]])
 
         # 生存奖励
-        liveReward = 2
+        liveReward = -50 if self.car.carInfo.isDone == True else 0
+        # liveReward = 0
 
         # 居中奖励
-        DistanceDiff = math.fabs(self.car.carInfo.leftDistance - self.car.carInfo.rightDistance)
-        centerReward = - DistanceDiff
+        centerReward = 2 - self.car.carInfo.centerDistance * self.car.carInfo.centerDistance * 0.1
+        # centerReward = 0
 
         # 速度奖励
-        speedReward = self.car.carInfo.speed * 2
+        # speedReward = self.car.carInfo.speed * 2
+        speedReward = 2
 
         # 总的奖励
-        allReward = liveReward + centerReward + speedReward
+        allReward = liveReward*0.8 + centerReward * 0.01 + speedReward * 0.1
 
         return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
                 self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
-                self.car.carInfo.angle], allReward * 0.01, self.car.carInfo.isDone
+                self.car.carInfo.angle], allReward * 0.001, self.car.carInfo.isDone
 
     def reset(self):
         self.car.reStart()

@@ -12,6 +12,7 @@ from map.CarMap import CarMap
 from car.CarBase import CarBase
 from tools.RacingTrack import RacingTrack
 
+
 class CarGame(threading.Thread):
 
     def __init__(self, screen):
@@ -54,7 +55,6 @@ class CarGame(threading.Thread):
                 self.car.Update()
 
                 time.sleep(0.02)
-
 
     def manageEvent(self, event):
         # 按键按下信息
@@ -109,8 +109,9 @@ class CarGame(threading.Thread):
 
         # 手动放置小车
         elif event.type == pygame.MOUSEBUTTONUP:
-            if self.car is None and\
-                    (list(self.screen.get_at(event.pos))[0:3] == RACECOLOR):
+            if self.car is None and \
+                    ((list(self.screen.get_at(event.pos))[0:3] == RACECOLOR) or (
+                            list(self.screen.get_at(event.pos))[0:3] == CENTERCOLOR)):
                 self.car = CarBase(self.screen, event.pos, angle=0)
                 self.placeCar = False
 
@@ -121,5 +122,3 @@ class CarGame(threading.Thread):
     # 开始线程
     def resume(self):
         self.__flag.set()  # 设置为True, 让线程停止阻塞
-
-
