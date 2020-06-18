@@ -96,11 +96,11 @@ class Mymodel(object):
                                                   lr=ACTOR_NETWORK_LR)
 
         # init the environment
-        self.taskEnv = env(mapIndex=0, initPosIndex=0)
+        self.taskEnv = env(mapIndex=1, initPosIndex=0)
         self.taskEnv.reset()
 
         # init the test environment
-        self.testEnv = env(mapIndex=0, initPosIndex=0)
+        self.testEnv = env(mapIndex=1, initPosIndex=0)
         self.testEnv.reset()
 
         # init the data container
@@ -305,7 +305,7 @@ class Mymodel(object):
         #
         # state = test_task.reset()
         temp = []
-        for test_step in range(2000):
+        for test_step in range(1000):
             dist = self.actorNetwork(Variable(torch.Tensor([state])).to(device))
 
             data = dist.sample()
@@ -329,7 +329,7 @@ class Mymodel(object):
         #     Q_x.append(infos['Q'][0])
         #     Q_y.append(infos['Q'][1])
         #
-            if done or test_step == 1999:
+            if done or test_step == 999:
                 print("episode:", self.episode, "task:", self.name, "test result:", test_step)
                 # print(temp)
                 break
@@ -389,7 +389,7 @@ class Mymodel(object):
             self.episode = self.episode + 1
             return
 
-        if self.episode % 10 == 0:
+        if self.episode % 20 == 0:
             self.modelTest(self.steps)
             self.maxSteps = 0
 

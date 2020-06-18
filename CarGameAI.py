@@ -56,7 +56,7 @@ class CarGameAI(object):
             else:
                 carInfo = self.record[self.initPosIndex]  # 指定出生位置
 
-            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], speed = 2,distanceLinesShow=True)
+            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], speed = 0,distanceLinesShow=True)
 
         else:
             exit("该地图无初始化点信息")
@@ -72,14 +72,14 @@ class CarGameAI(object):
         :param accAngle: 角加速度
         :return: [直线距离，左斜距离，右斜距离，左距离，右距离，速度，角度]， 奖励, 是否结束游戏
         """
-        accSpeed = action[0]
+        speed = [action[0], action[1], action[2]]
         Angle = [action[3], action[4], action[5]]
         self.carMap.clear()  # 刷新地图
-        accSpeed = 0
+        # accSpeed = 0
 
-        index = Angle.index(max(Angle))
-        accAngleItem = [-1, 0, 1]
-        accAngle = accAngleItem[index]
+        accItem = [-1, 0, 1]
+        accAngle = accItem[Angle.index(max(Angle))]
+        accSpeed = accItem[speed.index(max(speed))]
 
         self.car.Update(accSpeed * 0.1, accAngle * 5)  # 更新小车，并显示在地图上
 
@@ -95,11 +95,16 @@ class CarGameAI(object):
         centerReward = 0
 
         # 速度奖励
-        # speedReward = self.car.carInfo.speed * 2
+        # speedReward = self.car.carInfo.speed - 2
         speedReward = 0
 
+        # 加速奖励
+        accSpeedReward = 0
+        if accSpeed == 1:
+            accSpeedReward = 10
+
         # 总的奖励
-        allReward = liveReward + centerReward + speedReward
+        allReward = liveReward + centerReward + speedReward*10 + accSpeedReward
 
         return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
