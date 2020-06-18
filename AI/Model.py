@@ -30,7 +30,7 @@ def roll_out(actor_network, task, sample_nums):
         dist = actor_network(torch.tensor([state], dtype=torch.float).to(device))
 
         data = dist.sample()
-        action = data.clamp(-1, 1).cpu().numpy()[0]
+        action = data.clamp(0, 1).cpu().numpy()[0]
         # accSpeed = data[0, 0]
         # accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
         #
@@ -39,7 +39,7 @@ def roll_out(actor_network, task, sample_nums):
 
         next_state, reward, done = task.step(action)
 
-        actions.append(action)
+        actions.append(data.cpu().numpy()[0])
         rewards.append([(reward + 8) / 8])
         final_state = next_state
         state = next_state
@@ -209,6 +209,7 @@ class Mymodel(object):
         return len(actions)
 
     def train(self):
+        self.actorNetwork.train()
 
         self.actorNetworkOld.load_state_dict(self.actorNetwork.state_dict())
 
@@ -219,33 +220,15 @@ class Mymodel(object):
             s = torch.tensor(np.vstack(states), dtype=torch.float, requires_grad=True).to(
                 device)  # get state with grad
 
-            # init task config [1, sample_nums,task_config] task_config size=1
-            taskConfigLen = len(states) if len(states) <= TASK_CONFIG_LONG else TASK_CONFIG_LONG
-
-            preDataDamples = torch.cat(
-                (torch.tensor(states[-taskConfigLen:], dtype=torch.float).to(device),
-                 torch.tensor(actions[-taskConfigLen:], dtype=torch.float).to(device),
-                 torch.tensor(rewards, dtype=torch.float)[-taskConfigLen:].to(device)),
-                1).unsqueeze(0)
-
-            taskConfigInput = preDataDamples.clone().detach()
-            taskConfig = self.taskConfigNetwork(taskConfigInput, isDone)
-            taskConfigs = taskConfig.repeat(1, len(actions)).view(-1, TASK_CONFIG_DIM)
-            self.saveLstmScore(taskConfigs.cpu())
-
             s_ = torch.tensor(finalState, dtype=torch.float).to(device)
 
-            final_r = self.metaValueNetwork(torch.cat(
-                (s_[np.newaxis, :], taskConfig.detach()), 1).to(device)) \
-                if TASK_CONFIG_ENABLE else self.metaValueNetwork(s_)
+            final_r = self.metaValueNetwork(s_)
 
             discount_r = discount_reward(rewards, DELAYGAMMA, final_r.cpu().item())
             discount_r = torch.tensor(discount_r, dtype=torch.float, requires_grad=False).view(-1, 1).to(device)
 
             with torch.no_grad():
-                A_v = (discount_r - self.metaValueNetwork(
-                    torch.cat((s.detach(), taskConfigs.detach()), 1))) \
-                    if TASK_CONFIG_ENABLE else (discount_r - self.metaValueNetwork(s.detach()))
+                A_v = discount_r - self.metaValueNetwork(s.detach())
 
                 dist_old = self.actorNetworkOld(s.detach())
                 action_log_probs_old = dist_old.log_prob(a.detach())
@@ -253,13 +236,10 @@ class Mymodel(object):
             LossCount = torch.tensor([0, 0], dtype=torch.float)
             for step in range(STEP):
 
-                taskConfigInput = preDataDamples.clone().detach().requires_grad_(True)
-                taskConfig = self.taskConfigNetwork(taskConfigInput, isDone)
-                taskConfigs = taskConfig.repeat(1, len(actions)).view(-1, TASK_CONFIG_DIM)
-
                 dist = self.actorNetwork(s)
                 action_log_probs = dist.log_prob(a)
                 ratio = torch.exp(action_log_probs - action_log_probs_old.detach())
+
                 surr1 = ratio * A_v
                 surr2 = torch.clamp(ratio, 1.0 - 0.2,
                                     1.0 + 0.2) * A_v
@@ -271,49 +251,16 @@ class Mymodel(object):
                     print("Nane")
 
                 action_loss.backward()
+
                 if torch.isnan(self.actorNetwork.fc1.weight.grad[0, 0]):
                     print("ad")
+
                 self.actorNetworkOptim.step()
-                # print(action_loss.cpu().item())
-                # nn.utils.clip_grad_norm_(self.actorNetwork.parameters(), 0.5)
 
-                value_loss = F.mse_loss(discount_r, self.metaValueNetwork(
-                    torch.cat((s, taskConfigs), 1))) \
-                    if TASK_CONFIG_ENABLE else F.mse_loss(discount_r, self.metaValueNetwork(s))
-
+                value_loss = F.mse_loss(discount_r, self.metaValueNetwork(s))
                 self.metaValueNetworkOptim.zero_grad()
-
-                if TASK_CONFIG_ENABLE:
-                    # if retain_graph=False, the task_config_network can not be updated, and get an error
-                    self.taskConfigNetworkOptim.zero_grad()
-                    value_loss.backward()
-                    # nn.utils.clip_grad_norm_(self.metaValueNetwork.parameters(), 0.5)
-                    # nn.utils.clip_grad_norm_(self.taskConfigNetwork.parameters(), 0.5)
-
-                    # use loss to update public grad
-                    if self.A3C:
-                        self.shareGrads(self.metaValueNetwork, self.pubilcModel.metaValueNetwork)
-                        self.shareGrads(self.taskConfigNetwork, self.pubilcModel.taskConfigNetwork)
-                        # self.shareGrads(self.actorNetwork, self.pubilcModel.actorNetwork)
-
-                        self.pubilcModel.metaValueNetworkOptim.step()
-                        self.pubilcModel.taskConfigNetworkOptim.step()
-                        # self.pubilcModel.actorNetworkOptim.step()
-
-                    self.metaValueNetworkOptim.step()
-                    self.taskConfigNetworkOptim.step()
-                    self.actorNetworkOptim.step()
-
-                else:
-                    value_loss.backward()
-
-                    if self.A3C:
-                        self.shareGrads(self.metaValueNetwork, self.pubilcModel.metaValueNetwork)
-                        self.shareGrads(self.actorNetwork, self.pubilcModel.actorNetwork)
-                        self.pubilcModel.metaValueNetworkOptim.step()
-                        self.pubilcModel.actorNetworkOptim.step()
-
-                    self.metaValueNetworkOptim.step()
+                value_loss.backward()
+                self.metaValueNetworkOptim.step()
 
                 LossCount[0] = LossCount[0] + action_loss.cpu().item()
                 LossCount[1] = LossCount[1] + value_loss.cpu().item()
@@ -343,6 +290,7 @@ class Mymodel(object):
             shareParam.grad = param.grad.data.clone()
 
     def modelTest(self, trainSteps):
+        self.actorNetwork.eval()
         state = self.testEnv.reset()
         # result = 0
         # test_task = env(distance_error_max=0.5, uk=self.uk, mess=self.mess)
@@ -361,7 +309,7 @@ class Mymodel(object):
             dist = self.actorNetwork(Variable(torch.Tensor([state])).to(device))
 
             data = dist.sample()
-            action = data.clamp(-1, 1).cpu().numpy()[0]
+            action = data.clamp(0, 1).cpu().numpy()[0]
             # accSpeed = data[0, 0]
             # accSpeed = accSpeed.clamp(-MAXSPEEDACC, MAXSPEEDACC).cpu().numpy()
             #
@@ -383,7 +331,7 @@ class Mymodel(object):
         #
             if done or test_step == 1999:
                 print("episode:", self.episode, "task:", self.name, "test result:", test_step)
-                print(temp)
+                # print(temp)
                 break
         #
         # # if test_step > 100:

@@ -64,8 +64,7 @@ class CarGameAI(object):
         # 小车状态
         self.mstate = [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
-                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
-                self.car.carInfo.angle]
+                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed]
 
     def step(self, action):
         """
@@ -74,33 +73,38 @@ class CarGameAI(object):
         :return: [直线距离，左斜距离，右斜距离，左距离，右距离，速度，角度]， 奖励, 是否结束游戏
         """
         accSpeed = action[0]
-        accAngle = action[1]
+        Angle = [action[3], action[4], action[5]]
         self.carMap.clear()  # 刷新地图
         accSpeed = 0
+
+        index = Angle.index(max(Angle))
+        accAngleItem = [-1, 0, 1]
+        accAngle = accAngleItem[index]
+
         self.car.Update(accSpeed * 0.1, accAngle * 5)  # 更新小车，并显示在地图上
 
         # 记录位置信息
         self.tracking.append([self.car.carInfo.intPos[0], self.car.carInfo.intPos[1]])
 
         # 生存奖励
-        liveReward = -50 if self.car.carInfo.isDone == True else 0
+        liveReward = -100 if self.car.carInfo.isDone == True else 0
         # liveReward = 0
 
         # 居中奖励
-        centerReward = 2 - self.car.carInfo.centerDistance * self.car.carInfo.centerDistance * 0.1
-        # centerReward = 0
+        # centerReward = 2.25 - self.car.carInfo.centerDistance * self.car.carInfo.centerDistance * 0.1
+        centerReward = 0
 
         # 速度奖励
         # speedReward = self.car.carInfo.speed * 2
-        speedReward = 2
+        speedReward = 0.5
 
         # 总的奖励
-        allReward = liveReward*0.8 + centerReward * 0.01 + speedReward * 0.1
+        allReward = liveReward + centerReward + speedReward
 
         return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
-                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
-                self.car.carInfo.angle], allReward * 0.001, self.car.carInfo.isDone
+                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed], \
+               allReward, self.car.carInfo.isDone
 
     def reset(self):
         self.car.reStart()
@@ -108,8 +112,7 @@ class CarGameAI(object):
 
         return [self.car.carInfo.linearDistance, self.car.carInfo.leftAngleDistance,
                 self.car.carInfo.rightAngleDistance,
-                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed,
-                self.car.carInfo.angle]
+                self.car.carInfo.leftDistance, self.car.carInfo.rightDistance, self.car.carInfo.speed]
 
     def saveImage(self):
         filename = "AI/out/image/" + self.carMap.mapName()
@@ -126,7 +129,7 @@ if __name__ == "__main__":
     aaa = CarGameAI(0)
 
     while True:
-        state, reward, isdone = aaa.step(2,0)
+        state, reward, isdone = aaa.step(2, 0)
         aaa.saveImage()
 
         print(state, reward, isdone)
