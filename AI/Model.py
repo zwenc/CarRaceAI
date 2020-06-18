@@ -96,11 +96,11 @@ class Mymodel(object):
                                                   lr=ACTOR_NETWORK_LR)
 
         # init the environment
-        self.taskEnv = env(mapIndex=1, initPosIndex=0)
+        self.taskEnv = env(mapIndex=0, initPosIndex=0)
         self.taskEnv.reset()
 
         # init the test environment
-        self.testEnv = env(mapIndex=1, initPosIndex=0)
+        self.testEnv = env(mapIndex=0, initPosIndex=0)
         self.testEnv.reset()
 
         # init the data container

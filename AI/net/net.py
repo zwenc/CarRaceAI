@@ -25,10 +25,10 @@ class ActorNetwork(nn.Module):
         self.sigma = nn.Linear(hidden_size, action_size)
         # self.activate4 = torch.nn.LeakyReLU(0.001)
 
-        for m in self.children():
-            if isinstance(m, (nn.Linear)):
-                m.weight.data.normal_(0, 0.1)
-                m.bias.data.zero_()
+        # for m in self.children():
+        #     if isinstance(m, (nn.Linear)):
+        #         m.weight.data.normal_(0, 0.1)
+        #         m.bias.data.zero_()
 
     def forward(self, x):
         x = self.activate1(self.fc1(x))

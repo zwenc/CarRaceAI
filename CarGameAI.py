@@ -87,7 +87,7 @@ class CarGameAI(object):
         self.tracking.append([self.car.carInfo.intPos[0], self.car.carInfo.intPos[1]])
 
         # 生存奖励
-        liveReward = -100 if self.car.carInfo.isDone == True else 0
+        liveReward = -100 if self.car.carInfo.isDone == True else 2
         # liveReward = 0
 
         # 居中奖励
@@ -96,7 +96,7 @@ class CarGameAI(object):
 
         # 速度奖励
         # speedReward = self.car.carInfo.speed * 2
-        speedReward = 0.5
+        speedReward = 0
 
         # 总的奖励
         allReward = liveReward + centerReward + speedReward
