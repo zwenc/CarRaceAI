@@ -9,9 +9,9 @@ import time
 import threading
 from config.MapConfig import *
 from map.CarMap import CarMap
-from car.CarBase import CarBase
+from car.CarAI import CarAI
 from tools.RacingTrack import RacingTrack
-
+from car.AIControl import AIControl
 
 class CarGame(threading.Thread):
 
@@ -28,6 +28,10 @@ class CarGame(threading.Thread):
         # 游戏轨迹记录
         self.Recording = False
 
+        # 是否由AI控制小车
+        self.AIControlFlag = False
+        self.AImodel = AIControl()
+
         self.screen = screen
         self.carMap = CarMap(screen)
         self.car = None
@@ -40,11 +44,11 @@ class CarGame(threading.Thread):
 
         if self.record.hasRecord:
             carInfo = self.record.randomGetItem()[0]
-            self.car = CarBase(self.screen, [carInfo[0], carInfo[1]], carInfo[2])
+            # carInfo = self.record[0]
+            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2])
 
         while True:
             self.__flag.wait()
-            self.carMap.clear()
             if self.car is not None:
                 if self.car.isDone():
                     self.car.reStart()
@@ -52,9 +56,18 @@ class CarGame(threading.Thread):
                 if self.Recording:
                     self.record.append(self.car.carInfo.intPos, self.car.carInfo.angle, self.car.carInfo.speed)
 
-                self.car.Update()
+                if self.AIControlFlag:
 
-                time.sleep(0.02)
+                    accspeed, accangle = self.AImodel.step(self.car)
+                    self.carMap.clear()
+                    self.car.UpdateAI(accspeed, accangle)
+                    time.sleep(0.00001)
+                else:
+                    self.carMap.clear()
+                    self.car.Update()
+                    time.sleep(0.02)
+            else:
+                self.carMap.clear()
 
     def manageEvent(self, event):
         # 按键按下信息
@@ -69,12 +82,17 @@ class CarGame(threading.Thread):
                 # 如果该地图有记录，则自动放置小车
                 if self.record.hasRecord:
                     carInfo = self.record.randomGetItem()[0]
-                    self.car = CarBase(self.screen, [carInfo[0], carInfo[1]], carInfo[2])
+                    self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2])
 
             # 小车方向操作
             elif event.key in (pygame.K_UP, pygame.K_DOWN, pygame.K_RIGHT, pygame.K_LEFT):
                 if self.car is not None:
                     self.car.manageEvent(event)
+
+            # AI控制模式
+            elif event.key == pygame.K_a:
+                self.AIControlFlag = bool(1 - self.AIControlFlag)
+                print("切换AI控制模式")
 
             # 轨迹记录操作
             elif event.key == pygame.K_r:
@@ -112,7 +130,7 @@ class CarGame(threading.Thread):
             if self.car is None and \
                     ((list(self.screen.get_at(event.pos))[0:3] == RACECOLOR) or (
                             list(self.screen.get_at(event.pos))[0:3] == CENTERCOLOR)):
-                self.car = CarBase(self.screen, event.pos, angle=0)
+                self.car = CarAI(self.screen, event.pos, angle=0)
                 self.placeCar = False
 
     # 暂停线程

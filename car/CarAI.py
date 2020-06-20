@@ -11,13 +11,14 @@
 import pygame
 from car.CarBase import *
 
+# 添加了AI控制功能的小车
 class CarAI(CarBase):
 
-    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0,logoIndex=0, distanceLinesShow=False):
-        super(CarAI, self).__init__(screen, pos, angle, speed, logoIndex, distanceLinesShow)
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0, logoIndex=0, distanceLinesShow=False, AImode=False):
+        super(CarAI, self).__init__(screen, pos, angle, speed, logoIndex, distanceLinesShow, AImode=AImode)
 
     # 更新界面， 由AI直接控制，AI控制加速和角度两个参数
-    def Update(self, accSpeed, accAngle):
+    def UpdateAI(self, accSpeed, accAngle):
         accSpeed = MAXSPEEDACC if accSpeed >= MAXSPEEDACC else accSpeed
         accSpeed = -MAXSPEEDACC if accSpeed <= -MAXSPEEDACC else accSpeed
 

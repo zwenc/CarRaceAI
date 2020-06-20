@@ -326,15 +326,15 @@ class Mymodel(object):
 
     def loadDict(self):
         exterLstm = "LSTM" if TASK_CONFIG_ENABLE else ""
-        if os.path.exists("AI/model/meta_value_network" + exterLstm + "_best_" + self.name + ".pkl"):
-            self.metaValueNetwork.load_state_dict(torch.load("AI/model/meta_value_network"
+        if os.path.exists("AI/preweight/meta_value_network" + exterLstm + "_best_" + self.name + ".pkl"):
+            self.metaValueNetwork.load_state_dict(torch.load("AI/preweight/meta_value_network"
                                                              + exterLstm + "_best_" + self.name + ".pkl"))
             print("load value success!")
         # if os.path.exists("model/meta_value_network_cartpole" + exterLstm + "best" + self.name + ".pkl"):
         #     self.taskConfigNetwork.load_state_dict(torch.load("model/task_config_network_cartpole"
         #                                                       + exterLstm + "best" + self.name + ".pkl"))
-        if os.path.exists("AI/model/actor_network" +exterLstm + "_best_" +self.name + ".pkl"):
-            self.actorNetwork.load_state_dict(torch.load("AI/model/actor_network"+ exterLstm + "_best_" + self.name + ".pkl"))
+        if os.path.exists("AI/preweight/actor_network" +exterLstm + "_best_" +self.name + ".pkl"):
+            self.actorNetwork.load_state_dict(torch.load("AI/preweight/actor_network"+ exterLstm + "_best_" + self.name + ".pkl"))
             print("load actor success!")
 
     def saveDict(self, name=""):

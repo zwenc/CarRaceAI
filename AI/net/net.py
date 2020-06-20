@@ -46,6 +46,34 @@ class ActorNetwork(nn.Module):
 
         return out
 
+class ActorNetworkUser(nn.Module):
+    def __init__(self, input_size, hidden_size=100, action_size=1):
+        super(ActorNetworkUser, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.activate1 = torch.nn.LeakyReLU(0.0001)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.activate2 = torch.nn.LeakyReLU(0.0001)
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
+        self.activate3 = torch.nn.LeakyReLU(0.0001)
+
+        self.mu = nn.Linear(hidden_size, action_size)
+        self.sigma = nn.Linear(hidden_size, action_size)
+        # self.activate4 = torch.nn.LeakyReLU(0.001)
+
+        # for m in self.children():
+        #     if isinstance(m, (nn.Linear)):
+        #         m.weight.data.normal_(0, 0.1)
+        #         m.bias.data.zero_()
+
+    def forward(self, x):
+        x = self.activate1(self.fc1(x))
+        x = self.activate2(self.fc2(x))
+        x = self.activate3(self.fc3(x))
+
+        mu = torch.tanh(self.mu(x))          # 均值
+
+        return mu
+
 
 class MetaValueNetwork(nn.Module):
 

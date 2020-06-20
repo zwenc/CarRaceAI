@@ -56,7 +56,7 @@ class CarGameAI(object):
             else:
                 carInfo = self.record[self.initPosIndex]  # 指定出生位置
 
-            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], speed = 0,distanceLinesShow=True)
+            self.car = CarAI(self.screen, [carInfo[0], carInfo[1]], carInfo[2], speed = 0, distanceLinesShow=True, AImode=True)
 
         else:
             exit("该地图无初始化点信息")
@@ -81,7 +81,7 @@ class CarGameAI(object):
         accAngle = accItem[Angle.index(max(Angle))]
         accSpeed = accItem[speed.index(max(speed))]
 
-        self.car.Update(accSpeed * 0.1, accAngle * 5)  # 更新小车，并显示在地图上
+        self.car.UpdateAI(accSpeed * 0.1, accAngle * 5)  # 更新小车，并显示在地图上
 
         # 记录位置信息
         self.tracking.append([self.car.carInfo.intPos[0], self.car.carInfo.intPos[1]])

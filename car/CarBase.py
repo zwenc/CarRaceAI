@@ -13,10 +13,11 @@ from config.MapConfig import *
 
 class CarInfo(object):
 
-    def __init__(self, screen, pos, angle=0, speed = 0):
+    def __init__(self, screen, pos, angle=0, speed = 0, AImode=False):
         self.startPos = [pos[0], pos[1]]
         self.startAngle = angle
         self.startSpeed = speed
+        self.AImode = AImode
         self.screen = screen
         self.init()
 
@@ -86,20 +87,25 @@ class CarInfo(object):
             self.isDone = True
             return
 
-        if distanceLinesShow:
-            linearDistancePos, self.linearDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle)
-            leftDistancePos, self.leftDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - 90)
-            rightDistancePos, self.rightDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + 90)
-            leftAngleDistancePos, self.leftAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - RGITHLINEANGLE)
-            rightAngleDistancePos, self.rightAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + RGITHLINEANGLE)
+
+        linearDistancePos, self.linearDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle)
+        leftDistancePos, self.leftDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - 90)
+        rightDistancePos, self.rightDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + 90)
+        leftAngleDistancePos, self.leftAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle - RGITHLINEANGLE)
+        rightAngleDistancePos, self.rightAngleDistance = self.calcEdgeDistance(self.intPos, Angle=self.angle + RGITHLINEANGLE)
+
+        if self.AImode:
             centerPos, self.centerDistance = self.calcCenterDistance(self.intPos)
 
+        if distanceLinesShow:
             pygame.draw.line(self.screen, [100, 100, 0], linearDistancePos, self.intPos)
             pygame.draw.line(self.screen, [0, 100, 100], leftDistancePos, self.intPos)
             pygame.draw.line(self.screen, [0, 100, 100], rightDistancePos, self.intPos)
             pygame.draw.line(self.screen, [100, 0, 100], leftAngleDistancePos, self.intPos)
             pygame.draw.line(self.screen, [100, 0, 100], rightAngleDistancePos, self.intPos)
-            pygame.draw.line(self.screen, [0, 255, 255], centerPos, self.intPos)
+
+            if self.AImode:
+                pygame.draw.line(self.screen, [0, 255, 255], centerPos, self.intPos)
 
     def calcCenterDistance(self, carPos):
         posPix = list(self.screen.get_at(carPos))[0:3]
@@ -168,17 +174,18 @@ class KeyState(object):
 class CarBase(object):
 
     # 初始化画板、小车位置、小车图标
-    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0,logoIndex=0, distanceLinesShow=False):
+    def __init__(self, screen, pos=[20.0, 20.0], angle=0, speed = 0,logoIndex=0, distanceLinesShow=False, AImode = False):
         self.initPos = [pos[0], pos[1]]
         self.initAngle = angle
         self.initSpeed = speed
         self.pos = [pos[0], pos[1]]
         self.logoIndex = logoIndex
         self.screen = screen
+        self.AImode = AImode
         self.distanceLinesShow = distanceLinesShow
 
         # 小车信息
-        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle, self.initSpeed)
+        self.carInfo = CarInfo(self.screen, [pos[0], pos[1]], self.initAngle, self.initSpeed, self.AImode)
 
         # 初始化小车图片，以及状态
         self.logeFileList = os.listdir("config/png/")
