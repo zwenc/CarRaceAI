@@ -8,7 +8,7 @@ from AI.Model import *
 
 if __name__ == "__main__":
 
-    aaa = Mymodel()
+    aaa = Mymodel(name="map_2", envIndex=1, LoadDict=True)
 
     for i in range(EPISODE):
         aaa.run()

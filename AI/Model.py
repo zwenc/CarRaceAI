@@ -68,12 +68,13 @@ class Mymodel(object):
     CONTAINER_MAX_LEN = 1
 
     def __init__(self, name="1", LoadDict=False, A3C=False,
-                 PubilcModel=None, LrNum=1):
+                 PubilcModel=None, LrNum=1, envIndex = 1):
 
         self.pubilcModel = PubilcModel
         self.loadDicts = LoadDict
         self.A3C = A3C
         self.name = name
+        self.envIndex = envIndex
         self.episode = 0
 
         # create meta, tastConfig and actor network
@@ -96,11 +97,11 @@ class Mymodel(object):
                                                   lr=ACTOR_NETWORK_LR)
 
         # init the environment
-        self.taskEnv = env(mapIndex=1, initPosIndex=0)
+        self.taskEnv = env(mapIndex=self.envIndex, initPosIndex=0)
         self.taskEnv.reset()
 
         # init the test environment
-        self.testEnv = env(mapIndex=1, initPosIndex=0)
+        self.testEnv = env(mapIndex=self.envIndex, initPosIndex=0)
         self.testEnv.reset()
 
         # init the data container
@@ -108,8 +109,7 @@ class Mymodel(object):
         self.containerLen = 0
 
         # init some flag
-        self.miniDistance = 10  # record the mini distance
-        self.currentDistance = 10
+        self.maxDistance = 0
         self.rewardsContainer = []  # record rewards
         self.steps = 0
         self.maxSteps = 0
@@ -292,19 +292,8 @@ class Mymodel(object):
     def modelTest(self, trainSteps):
         self.actorNetwork.eval()
         state = self.testEnv.reset()
-        # result = 0
-        # test_task = env(distance_error_max=0.5, uk=self.uk, mess=self.mess)
-        # # reward path infos
-        # B_distance_error, Q_distance_error = [], []
-        # angle_error = []
-        # betas = []
-        # B_x = []
-        # B_y = []
-        # Q_x = []
-        # Q_y = []
-        #
-        # state = test_task.reset()
         temp = []
+        moveDistance = 0
         for test_step in range(1000):
             dist = self.actorNetwork(Variable(torch.Tensor([state])).to(device))
 
@@ -320,46 +309,33 @@ class Mymodel(object):
             state = next_state
             temp.append(action)
 
-        #     B_distance_error.append(infos['B_distance_error'])
-        #     Q_distance_error.append(infos['Q_distance_error'])
-        #     angle_error.append(infos['angle_error'])
-        #     betas.append(infos['beta'] * 180 / np.pi)
-        #     B_x.append(infos['B'][0])
-        #     B_y.append(infos['B'][1])
-        #     Q_x.append(infos['Q'][0])
-        #     Q_y.append(infos['Q'][1])
-        #
+            if done == False:
+                moveDistance += next_state[5]
+
             if done or test_step == 999:
-                print("episode:", self.episode, "task:", self.name, "test result:", test_step)
-                # print(temp)
                 break
-        #
-        # # if test_step > 100:
-        # #     draw(B_x, B_y, Q_x, Q_y, B_distance_error, angle_error, betas, best=True, name=self.name)
-        #
-        # print("episode:", self.episode, "task:", self.name, "test result:", result / 10.0, "test_step:",
-        #       test_step, "train_step:", trainSteps, "max steps:", self.maxSteps)
 
         # self.rewardsContainer.append(result)
-        # self.currentDistance = np.mean([abs(v) for v in B_distance_error])
-        # if self.miniDistance > self.currentDistance:
-        #     self.miniDistance = self.currentDistance
-        #     self.saveDict(name="best")  # save dict, called best
+        print("episode:", self.episode, "task:", self.name, "test result:", test_step, "move distance:", moveDistance.__round__(2),
+              "average speed:", round(moveDistance/test_step, 2), "end speed:", self.testEnv.car.carInfo.speed)
         self.testEnv.saveImage()
+        if moveDistance >= self.maxDistance:
+            self.maxDistance = moveDistance
+            self.saveDict(name="_best_")  # save dict, called best
 
 
     def loadDict(self):
         exterLstm = "LSTM" if TASK_CONFIG_ENABLE else ""
-        if os.path.exists("model/meta_value_network_cartpole" + exterLstm + "best" + self.name + ".pkl"):
-            self.metaValueNetwork.load_state_dict(torch.load("model/meta_value_network_cartpole"
-                                                             + exterLstm + "best" + self.name + ".pkl"))
-        if os.path.exists("model/meta_value_network_cartpole" + exterLstm + "best" + self.name + ".pkl"):
-            self.taskConfigNetwork.load_state_dict(torch.load("model/task_config_network_cartpole"
-                                                              + exterLstm + "best" + self.name + ".pkl"))
-        # if os.path.exists("model/actor_network_cartpole" +exterLstm+ self.name + ".pkl"):
-        #     self.actorNetwork.load_state_dict(torch.load("model/actor_network_cartpole" + self.name + ".pkl"))
-
-        print("load dict success !")
+        if os.path.exists("AI/model/meta_value_network" + exterLstm + "_best_" + self.name + ".pkl"):
+            self.metaValueNetwork.load_state_dict(torch.load("AI/model/meta_value_network"
+                                                             + exterLstm + "_best_" + self.name + ".pkl"))
+            print("load value success!")
+        # if os.path.exists("model/meta_value_network_cartpole" + exterLstm + "best" + self.name + ".pkl"):
+        #     self.taskConfigNetwork.load_state_dict(torch.load("model/task_config_network_cartpole"
+        #                                                       + exterLstm + "best" + self.name + ".pkl"))
+        if os.path.exists("AI/model/actor_network" +exterLstm + "_best_" +self.name + ".pkl"):
+            self.actorNetwork.load_state_dict(torch.load("AI/model/actor_network"+ exterLstm + "_best_" + self.name + ".pkl"))
+            print("load actor success!")
 
     def saveDict(self, name=""):
         exterLstm = "LSTM" if TASK_CONFIG_ENABLE else ""
@@ -368,13 +344,13 @@ class Mymodel(object):
             os.makedirs(MODELPATH + TIMESTR)
 
         torch.save(self.metaValueNetwork.state_dict(),
-                   MODELPATH + TIMESTR + "/meta_value_network_cartpole" + exterLstm + name + self.name + ".pkl")
+                   MODELPATH + TIMESTR + "/meta_value_network" + exterLstm + name + self.name + ".pkl")
 
         torch.save(self.taskConfigNetwork.state_dict(),
-                   MODELPATH + TIMESTR + "/task_config_network_cartpole" + exterLstm + name + self.name + ".pkl")
+                   MODELPATH + TIMESTR + "/task_config_network" + exterLstm + name + self.name + ".pkl")
 
         torch.save(self.actorNetwork.state_dict(),
-                   MODELPATH + TIMESTR + "/actor_network_cartpole" + exterLstm + name + self.name + ".pkl")
+                   MODELPATH + TIMESTR + "/actor_network" + exterLstm + name + self.name + ".pkl")
 
     def loadPublicDict(self):
         if self.A3C:
@@ -393,9 +369,6 @@ class Mymodel(object):
             self.modelTest(self.steps)
             self.maxSteps = 0
 
-        # if self.episode % 1 == 0:
-        #     self.loadPublicDict()
-
         self.episode = self.episode + 1
         self.steps = self.sampleData()  # data collect
 
@@ -404,7 +377,7 @@ class Mymodel(object):
 
         self.train()
 
-        # self.saveDict()
+        self.saveDict()
 
 if __name__ == "__main__":
 
